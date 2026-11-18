@@ -250,6 +250,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const isComingSoon = movie.release_status === 'COMING_SOON';
             const ratingDisplay = movie.rating ? parseFloat(movie.rating).toFixed(1) : '4.5';
 
+            // Check if movie is currently in watchlist
+            let inWatchlist = false;
+            try {
+                const localList = JSON.parse(localStorage.getItem('cinepass_watchlist') || '[]');
+                if (localList.includes(movie.movie_id)) inWatchlist = true;
+            } catch (e) {}
+
             card.innerHTML = `
                 <div class="movie-poster-wrapper">
                     <img 
@@ -274,13 +281,67 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="badge badge-genre">${escapeHtml(movie.genre)}</span>
                         <span class="movie-duration">⏱ ${durationFormatted}</span>
                     </div>
-                    <div class="movie-card-footer">
-                        <a href="movie.html?id=${movie.movie_id}" class="btn ${isComingSoon ? 'btn-secondary' : 'btn-primary'} btn-block">
+                    <div class="movie-card-footer" style="display: flex; gap: 8px;">
+                        <a href="movie.html?id=${movie.movie_id}" class="btn ${isComingSoon ? 'btn-secondary' : 'btn-primary'}" style="flex: 1; text-align: center;">
                             <span>${isComingSoon ? 'View Details' : 'Book Tickets'}</span>
                         </a>
+                        <button type="button" class="btn btn-secondary home-watchlist-btn" data-id="${movie.movie_id}" title="${inWatchlist ? 'In Watchlist (Click to Remove)' : 'Add to Watchlist'}" style="padding: 0 12px; font-size: 1.15rem; border: 1px solid var(--border-color); ${inWatchlist ? 'color: #ff4757; border-color: rgba(255, 71, 87, 0.4); background: rgba(255, 71, 87, 0.12);' : ''}">
+                            <span>${inWatchlist ? '❤️' : '🤍'}</span>
+                        </button>
                     </div>
                 </div>
             `;
+
+            // Bind quick 1-click watchlist toggle
+            const wlBtn = card.querySelector('.home-watchlist-btn');
+            if (wlBtn) {
+                wlBtn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const mId = movie.movie_id;
+                    let localList = [];
+                    try { localList = JSON.parse(localStorage.getItem('cinepass_watchlist') || '[]'); } catch (err) {}
+                    const isSaved = localList.includes(mId);
+                    const userTok = localStorage.getItem('cinepass_token');
+
+                    if (isSaved) {
+                        localList = localList.filter(id => id !== mId);
+                        if (userTok) {
+                            try {
+                                await fetch(`/api/watchlist/${mId}`, {
+                                    method: 'DELETE',
+                                    headers: { 'Authorization': `Bearer ${userTok}` }
+                                });
+                            } catch (err) {}
+                        }
+                        wlBtn.innerHTML = '<span>🤍</span>';
+                        wlBtn.style.color = '';
+                        wlBtn.style.background = '';
+                        wlBtn.style.borderColor = 'var(--border-color)';
+                        wlBtn.title = 'Add to Watchlist';
+                    } else {
+                        localList.push(mId);
+                        if (userTok) {
+                            try {
+                                await fetch('/api/watchlist', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Authorization': `Bearer ${userTok}`
+                                    },
+                                    body: JSON.stringify({ movie_id: mId })
+                                });
+                            } catch (err) {}
+                        }
+                        wlBtn.innerHTML = '<span>❤️</span>';
+                        wlBtn.style.color = '#ff4757';
+                        wlBtn.style.background = 'rgba(255, 71, 87, 0.12)';
+                        wlBtn.style.borderColor = 'rgba(255, 71, 87, 0.4)';
+                        wlBtn.title = 'In Watchlist (Click to Remove)';
+                    }
+                    localStorage.setItem('cinepass_watchlist', JSON.stringify(localList));
+                });
+            }
 
             movieGrid.appendChild(card);
         });
@@ -390,6 +451,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const userJson = localStorage.getItem('cinepass_user');
 
         if (token && userJson && userNavActions) {
+            // Delegate to profile.js for the full profile pill + dropdown (Edit Profile, etc.)
+            if (window.cinepassProfile && typeof window.cinepassProfile.init === 'function') {
+                window.cinepassProfile.init();
+                return;
+            }
+            // Fallback if profile.js didn't load
             try {
                 const user = JSON.parse(userJson);
                 userNavActions.innerHTML = `

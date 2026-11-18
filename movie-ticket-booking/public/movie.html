@@ -211,6 +211,12 @@
           </div>
         </div>
 
+        <div style="text-align: center; margin: 10px 0 16px 0;">
+          <span style="display: inline-block; background: rgba(233, 69, 96, 0.12); color: #fff; padding: 6px 16px; border-radius: 20px; font-size: 0.86rem; border: 1px solid rgba(233, 69, 96, 0.35);">
+            🪑 <strong>Step 1:</strong> Click any available seat below to select it (Max 8 seats)
+          </span>
+        </div>
+
         <!-- Interactive Seat Grid -->
         <div class="seat-map-layout" id="seatMapLayout">
           <!-- Dynamically rendered via js/movie.js -->
@@ -263,8 +269,8 @@
           </div>
 
           <!-- Payment CTA Button -->
-          <button type="button" id="proceedToPayBtn" class="btn btn-primary btn-block btn-lg" disabled>
-            <span>💳 Proceed to Payment (Select Seats First)</span>
+          <button type="button" id="proceedToPayBtn" class="btn btn-primary btn-block btn-lg">
+            <span>💳 Select Seats Above to Proceed</span>
           </button>
         </div>
       </section>
@@ -319,7 +325,10 @@
             <p style="font-size: 0.78rem; color: var(--text-muted);">Secure 256-Bit SSL Encrypted Transaction</p>
           </div>
         </div>
-        <span class="rzp-badge" id="paymentModeBadge">TEST MODE</span>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="rzp-badge" id="paymentModeBadge">TEST MODE</span>
+          <button type="button" id="closePaymentModalX" style="background: none; border: none; color: #fff; font-size: 1.6rem; cursor: pointer; line-height: 1; padding: 0 4px;" title="Close">&times;</button>
+        </div>
       </div>
 
       <!-- Amount Banner -->
@@ -514,7 +523,8 @@
     </div>
   </footer>
 
-  <!-- Page Script -->
+  <!-- Page Scripts -->
+  <script src="js/profile.js"></script>
   <script src="js/movie.js"></script>
 </body>
 </html>

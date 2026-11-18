@@ -439,13 +439,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const count = seats.length;
 
         if (count === 0) {
-            if (summarySelectedSeats) summarySelectedSeats.textContent = 'None selected';
+            if (summarySelectedSeats) summarySelectedSeats.textContent = 'None selected (Click seats above)';
             if (summarySubtotal) summarySubtotal.textContent = '₹0.00';
             if (summaryConvenienceFee) summaryConvenienceFee.textContent = '₹0.00';
             if (summaryTotalAmount) summaryTotalAmount.textContent = '₹0.00';
             if (proceedToPayBtn) {
-                proceedToPayBtn.disabled = true;
-                proceedToPayBtn.innerHTML = '<span>💳 Proceed to Payment (Select Seats First)</span>';
+                proceedToPayBtn.disabled = false;
+                proceedToPayBtn.innerHTML = '<span>💳 Select Seat(s) Above to Proceed</span>';
+                proceedToPayBtn.style.opacity = '0.85';
             }
             return;
         }
@@ -469,7 +470,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (proceedToPayBtn) {
             proceedToPayBtn.disabled = false;
-            proceedToPayBtn.innerHTML = `<span>💳 Pay ₹${totalPayable.toFixed(2)} &amp; Book Tickets</span>`;
+            proceedToPayBtn.style.opacity = '1';
+            proceedToPayBtn.innerHTML = `<span>💳 Proceed to Pay ₹${totalPayable.toFixed(2)} &amp; Book Tickets &rarr;</span>`;
         }
     }
 
@@ -534,24 +536,59 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================================================
     // Store the current order ID for verification later
     let currentOrderId = null;
+
+    function openPaymentModal(amountFormatted) {
+        if (modalPayableAmount) modalPayableAmount.textContent = amountFormatted;
+        if (paymentModal) {
+            paymentModal.classList.add('active');
+            paymentModal.style.display = 'flex';
+        }
+    }
+
+    function closePaymentModal() {
+        if (paymentModal) {
+            paymentModal.classList.remove('active');
+            paymentModal.style.display = 'none';
+        }
+    }
+
     if (proceedToPayBtn) {
         proceedToPayBtn.addEventListener('click', async () => {
             const name = (custNameInput ? custNameInput.value : '').trim();
             const email = (custEmailInput ? custEmailInput.value : '').trim();
 
-            if (!name || !email) {
-                alert('Please enter your full name and email address to proceed.');
+            if (selectedSeatsMap.size === 0) {
+                if (seatMapLayout) {
+                    seatMapLayout.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    seatMapLayout.style.outline = '3px solid var(--accent-red)';
+                    seatMapLayout.style.boxShadow = '0 0 25px rgba(233, 69, 96, 0.8)';
+                    setTimeout(() => {
+                        seatMapLayout.style.outline = '';
+                        seatMapLayout.style.boxShadow = '';
+                    }, 2500);
+                }
+                alert('👉 Please click on at least one seat from the seat layout above first!');
                 return;
             }
 
-            if (selectedSeatsMap.size === 0) {
-                alert('Please select at least one seat.');
+            if (!name || !email) {
+                alert('Please enter your full name and email address to proceed.');
+                if (!name && custNameInput) custNameInput.focus();
+                else if (custEmailInput) custEmailInput.focus();
                 return;
             }
 
             // Calculate total payable amount from UI
             const totalText = summaryTotalAmount.textContent || '₹0.00';
             const amountNumber = parseFloat(totalText.replace(/[^\d\.]/g, '')) || 0;
+
+            if (amountNumber <= 0) {
+                alert('Invalid ticket amount. Please select at least one seat.');
+                return;
+            }
+
+            proceedToPayBtn.disabled = true;
+            proceedToPayBtn.innerHTML = '<span>⏳ Opening Payment Gateway...</span>';
 
             try {
                 // Create Razorpay order (or simulated order) on backend
@@ -562,24 +599,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const createData = await createRes.json();
                 if (!createRes.ok || !createData.success) {
-                    alert('Failed to create payment order: ' + (createData.message || 'unknown error'));
+                    alert('Failed to initialize payment: ' + (createData.message || 'unknown error'));
                     return;
                 }
                 currentOrderId = createData.order.id; // store for later verification
 
                 // Show amount in modal and open it
-                if (modalPayableAmount) modalPayableAmount.textContent = totalText;
-                if (paymentModal) paymentModal.style.display = 'flex';
+                openPaymentModal(totalText);
             } catch (e) {
                 console.error('Error creating payment order:', e);
                 alert('Unable to initiate payment at this time.');
+            } finally {
+                proceedToPayBtn.disabled = false;
+                updateCalculations();
             }
         });
     }
 
-    if (cancelPaymentBtn && paymentModal) {
-        cancelPaymentBtn.addEventListener('click', () => {
-            paymentModal.style.display = 'none';
+    if (cancelPaymentBtn) {
+        cancelPaymentBtn.addEventListener('click', closePaymentModal);
+    }
+    const closePaymentModalX = document.getElementById('closePaymentModalX');
+    if (closePaymentModalX) {
+        closePaymentModalX.addEventListener('click', closePaymentModal);
+    }
+    if (paymentModal) {
+        paymentModal.addEventListener('click', (e) => {
+            if (e.target === paymentModal) closePaymentModal();
         });
     }
 
@@ -599,7 +645,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (confirmPaymentSuccessBtn) {
         confirmPaymentSuccessBtn.addEventListener('click', async () => {
             confirmPaymentSuccessBtn.disabled = true;
-            confirmPaymentSuccessBtn.innerHTML = '<span>Verifying Payment...</span>';
+            confirmPaymentSuccessBtn.innerHTML = '<span>⏳ Verifying Payment &amp; Booking...</span>';
 
             const name = custNameInput.value.trim();
             const email = custEmailInput.value.trim();
@@ -608,16 +654,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 // 1. Verify Payment on Backend
-                const simTxnId = 'TXN-RZP-TEST-' + Date.now();
                 const verifyRes = await fetch('/api/payments/verify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        razorpay_order_id: currentOrderId,
+                        razorpay_order_id: currentOrderId || ('order_sim_' + Date.now()),
                         razorpay_payment_id: 'pay_test_' + Date.now(),
                         is_simulator: true
                     })
                 });
+
+                const verifyData = await verifyRes.json();
+                const txnId = (verifyData && verifyData.transaction_id) ? verifyData.transaction_id : ('TXN-SIM-' + Date.now());
 
                 // 2. Execute ACID Booking Transaction in MySQL
                 const headers = { 'Content-Type': 'application/json' };
@@ -632,7 +680,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         show_id: currentShow.show_id,
                         seat_ids: seatIds,
                         coupon_code: couponCode,
-                        transaction_id: simTxnId,
+                        transaction_id: txnId,
                         payment_method: 'RAZORPAY_TEST'
                     })
                 });
@@ -644,7 +692,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // Close payment modal
-                if (paymentModal) paymentModal.style.display = 'none';
+                closePaymentModal();
 
                 // Display Digital Cinema Ticket Modal
                 displayDigitalTicket(bookingData.data);
@@ -684,24 +732,50 @@ document.addEventListener('DOMContentLoaded', () => {
         if (ticketCustomerName) ticketCustomerName.textContent = ticket.customer_name;
         if (ticketTotalAmount) ticketTotalAmount.textContent = `₹${parseFloat(ticket.total_amount).toFixed(2)}`;
 
-        if (ticketModal) ticketModal.style.display = 'flex';
+        if (ticketModal) {
+            ticketModal.classList.add('active');
+            ticketModal.style.display = 'flex';
+            ticketModal.addEventListener('click', (e) => {
+                if (e.target === ticketModal) {
+                    ticketModal.classList.remove('active');
+                    ticketModal.style.display = 'none';
+                }
+            });
+        }
     }
 
     // ==========================================================================
     // Watchlist Logic
     // ==========================================================================
     async function checkWatchlistStatus() {
-        if (!userToken || !watchlistToggleBtn) return;
-        try {
-            const res = await fetch('/api/watchlist', {
-                headers: { 'Authorization': `Bearer ${userToken}` }
-            });
-            const data = await res.json();
-            if (data.success && Array.isArray(data.data)) {
-                inWatchlist = data.data.some(m => String(m.movie_id) === String(movieId));
-                updateWatchlistBtn();
-            }
-        } catch (e) {}
+        if (!watchlistToggleBtn) return;
+
+        // Check local storage watchlist first
+        const localListJson = localStorage.getItem('cinepass_watchlist');
+        if (localListJson) {
+            try {
+                const ids = JSON.parse(localListJson);
+                if (Array.isArray(ids) && ids.includes(parseInt(movieId, 10))) {
+                    inWatchlist = true;
+                    updateWatchlistBtn();
+                    return;
+                }
+            } catch (e) {}
+        }
+
+        // If user is logged in, check server MySQL database
+        if (userToken) {
+            try {
+                const res = await fetch('/api/watchlist', {
+                    headers: { 'Authorization': `Bearer ${userToken}` }
+                });
+                const data = await res.json();
+                if (data.success && Array.isArray(data.data)) {
+                    inWatchlist = data.data.some(m => String(m.movie_id) === String(movieId));
+                    updateWatchlistBtn();
+                }
+            } catch (e) {}
+        }
     }
 
     function updateWatchlistBtn() {
@@ -719,27 +793,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (watchlistToggleBtn) {
         watchlistToggleBtn.addEventListener('click', async () => {
-            if (!userToken) {
-                alert('Please sign in to add movies to your personal watchlist.');
-                return;
-            }
+            const mId = parseInt(movieId, 10);
 
             try {
                 if (inWatchlist) {
-                    await fetch(`/api/watchlist/${movieId}`, {
-                        method: 'DELETE',
-                        headers: { 'Authorization': `Bearer ${userToken}` }
-                    });
+                    // Remove from server if token present
+                    if (userToken) {
+                        await fetch(`/api/watchlist/${movieId}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${userToken}` }
+                        });
+                    }
+                    // Remove from local storage
+                    const localListJson = localStorage.getItem('cinepass_watchlist');
+                    if (localListJson) {
+                        try {
+                            let ids = JSON.parse(localListJson);
+                            ids = ids.filter(id => id !== mId);
+                            localStorage.setItem('cinepass_watchlist', JSON.stringify(ids));
+                        } catch (e) {}
+                    }
                     inWatchlist = false;
                 } else {
-                    await fetch('/api/watchlist', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${userToken}`
-                        },
-                        body: JSON.stringify({ movie_id: parseInt(movieId, 10) })
-                    });
+                    // Add to server if token present
+                    if (userToken) {
+                        await fetch('/api/watchlist', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${userToken}`
+                            },
+                            body: JSON.stringify({ movie_id: mId })
+                        });
+                    }
+                    // Add to local storage
+                    let ids = [];
+                    const localListJson = localStorage.getItem('cinepass_watchlist');
+                    if (localListJson) {
+                        try { ids = JSON.parse(localListJson); } catch (e) {}
+                    }
+                    if (!ids.includes(mId)) ids.push(mId);
+                    localStorage.setItem('cinepass_watchlist', JSON.stringify(ids));
+
                     inWatchlist = true;
                 }
                 updateWatchlistBtn();

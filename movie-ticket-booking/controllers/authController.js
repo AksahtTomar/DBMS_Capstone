@@ -78,7 +78,7 @@ exports.login = async (req, res, next) => {
 
         // Query user by email
         const [users] = await pool.query(
-            'SELECT user_id, name, email, password_hash, phone, role FROM users WHERE email = ?',
+            'SELECT user_id, name, email, password_hash, phone, role, avatar FROM users WHERE email = ?',
             [normalizedEmail]
         );
 
@@ -110,7 +110,8 @@ exports.login = async (req, res, next) => {
                 name: user.name,
                 email: user.email,
                 phone: user.phone,
-                role: user.role
+                role: user.role,
+                avatar: user.avatar || null
             }
         });
     } catch (err) {
@@ -124,7 +125,7 @@ exports.login = async (req, res, next) => {
 exports.getMe = async (req, res, next) => {
     try {
         const [users] = await pool.query(
-            'SELECT user_id, name, email, phone, role, created_at FROM users WHERE user_id = ?',
+            'SELECT user_id, name, email, phone, role, avatar, created_at FROM users WHERE user_id = ?',
             [req.user.user_id]
         );
 
@@ -139,24 +140,38 @@ exports.getMe = async (req, res, next) => {
 };
 
 /**
- * Update user profile
+ * Update user profile (Name, Phone, and Custom Avatar/Photo)
  */
 exports.updateProfile = async (req, res, next) => {
     try {
-        const { name, phone } = req.body;
-        if (!name) {
+        const { name, phone, avatar } = req.body;
+        if (!name || !name.trim()) {
             return res.status(400).json({ success: false, message: 'Name cannot be empty' });
         }
 
         await pool.query(
-            'UPDATE users SET name = ?, phone = ? WHERE user_id = ?',
-            [name.trim(), phone || null, req.user.user_id]
+            'UPDATE users SET name = ?, phone = ?, avatar = ? WHERE user_id = ?',
+            [name.trim(), phone || null, avatar !== undefined ? avatar : null, req.user.user_id]
         );
+
+        // Fetch updated user
+        const [updatedUsers] = await pool.query(
+            'SELECT user_id, name, email, phone, role, avatar FROM users WHERE user_id = ?',
+            [req.user.user_id]
+        );
+
+        const updatedUser = updatedUsers[0] || {
+            user_id: req.user.user_id,
+            name: name.trim(),
+            email: req.user.email,
+            phone: phone || null,
+            avatar: avatar || null
+        };
 
         res.json({
             success: true,
             message: 'Profile updated successfully',
-            user: { user_id: req.user.user_id, name: name.trim(), phone }
+            user: updatedUser
         });
     } catch (err) {
         next(err);
