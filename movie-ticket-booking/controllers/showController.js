@@ -1,11 +1,39 @@
 const pool = require('../config/db');
 
+let lastSyncCheck = null;
+
+/**
+ * Automatically ensures shows are scheduled from today forward
+ * if all shows in database ever lapse into the past.
+ */
+async function ensureUpcomingShows() {
+    const today = new Date().toISOString().split('T')[0];
+    if (lastSyncCheck === today) return;
+
+    try {
+        const [rows] = await pool.query('SELECT COUNT(*) as futureCount FROM shows WHERE show_date >= CURDATE()');
+        if (rows[0].futureCount === 0) {
+            const [minRows] = await pool.query('SELECT MIN(show_date) as minDate FROM shows');
+            if (minRows.length > 0 && minRows[0].minDate) {
+                await pool.query(`
+                    UPDATE shows 
+                    SET show_date = DATE_ADD(CURDATE(), INTERVAL DATEDIFF(show_date, (SELECT min_d FROM (SELECT MIN(show_date) as min_d FROM shows) as t)) DAY)
+                `);
+            }
+        }
+        lastSyncCheck = today;
+    } catch (e) {
+        console.error('Showtime auto-sync check error:', e);
+    }
+}
+
 /**
  * Fetch all shows with multi-criteria filtering:
  * movie_id, theatre_id, city, date
  */
 const getAllShows = async (req, res) => {
     try {
+        await ensureUpcomingShows();
         const { movie_id, theatre_id, city, date } = req.query;
 
         let query = `
@@ -68,6 +96,7 @@ const getAllShows = async (req, res) => {
  */
 const getShowsByMovie = async (req, res) => {
     try {
+        await ensureUpcomingShows();
         const movieId = parseInt(req.params.movieId, 10);
         const { city, date } = req.query;
 

@@ -255,10 +255,7 @@ INSERT INTO shows (show_id, movie_id, theatre_id, screen_id, show_date, show_tim
 (14, 6, 3, 6, DATE_ADD(CURDATE(), INTERVAL 1 DAY), '17:00:00', 310.00, 64, 64),
 
 -- Oppenheimer (Movie 7)
-(15, 7, 1, 1, DATE_ADD(CURDATE(), INTERVAL 1 DAY), '13:30:00', 350.00, 64, 64    (10, 'Kabir Singh', 'Romance', 165, 'Hindi', 'A hot-headed surgeon meets a brave medical student at a college, exploring love, loss and redemption.', '/images/posters/kabir-singh.svg', 'https://images.unsplash.com/photo-1517602302552-471fe67acf66?w=1200&q=80', 4.5, 11000, 'Shahid Kapoor, Kiara Advani | Dir: Sandeep Reddy Vanga', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=JkLlqgVoiP8', '2020-06-21'),
-    (11, 'Baahubali: The Beginning', 'Action', 159, 'Telugu', 'Epic tale of two brothers in a kingdom torn by betrayal and power.', '/images/posters/baahubali1.svg', 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=1200&q=80', 4.7, 15000, 'Prabhas, Rana Daggubati | Dir: S.S. Rajamouli', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=3U8ZPVApG1w', '2015-07-10'),
-    (12, 'Kantara', 'Drama', 124, 'Kannada', 'A mythic tale of man versus nature set in the Western Ghats.', '/images/posters/kantara.svg', 'https://images.unsplash.com/photo-1617563312615-cd5d8e573ef0?w=1200&q=80', 4.6, 9000, 'Rishab Shetty, Sapthami Gowda | Dir: Rishab Shetty', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=Ktr-R2AVeAU', '2022-09-30'),
-    (13, 'Joker', 'Drama', 122, 'English', 'A gritty origin story of a failed comedian turned chaotic villain.', '/images/posters/joker.svg', 'https://images.unsplash.com/photo-1521452263015-ef44692281b4?w=1200&q=80', 4.8, 20000, 'Joaquin Phoenix | Dir: Todd Phillips', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=zAGJQ3tJ4Io', '2019-10-04')
+(15, 7, 1, 1, DATE_ADD(CURDATE(), INTERVAL 1 DAY), '13:30:00', 350.00, 64, 64)
 );
 
 -- =======================================================
@@ -267,10 +264,7 @@ INSERT INTO shows (show_id, movie_id, theatre_id, screen_id, show_date, show_tim
 INSERT INTO coupons (coupon_id, code, description, discount_percent, max_discount, min_amount, expiry_date, is_active) VALUES
 (1, 'WELCOME50', '50% off for first time movie lovers up to ₹150', 50, 150.00, 250.00, DATE_ADD(CURDATE(), INTERVAL 90 DAY), TRUE),
 (2, 'CINE100', 'Flat 20% discount on cinema bookings up to ₹100', 20, 100.00, 300.00, DATE_ADD(CURDATE(), INTERVAL 60 DAY), TRUE),
-(3, 'BLOCKBUSTER', 'Mega 30% discount on premium auditoriums up to ₹250', 30, 250.00, 500.00, DATE_ADD(CURDATE(), INTERVAL 45 DAY), TRUE    (10, 'Kabir Singh', 'Romance', 165, 'Hindi', 'A hot-headed surgeon meets a brave medical student at a college, exploring love, loss and redemption.', '/images/posters/kabir-singh.svg', 'https://images.unsplash.com/photo-1517602302552-471fe67acf66?w=1200&q=80', 4.5, 11000, 'Shahid Kapoor, Kiara Advani | Dir: Sandeep Reddy Vanga', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=JkLlqgVoiP8', '2020-06-21'),
-    (11, 'Baahubali: The Beginning', 'Action', 159, 'Telugu', 'Epic tale of two brothers in a kingdom torn by betrayal and power.', '/images/posters/baahubali1.svg', 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=1200&q=80', 4.7, 15000, 'Prabhas, Rana Daggubati | Dir: S.S. Rajamouli', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=3U8ZPVApG1w', '2015-07-10'),
-    (12, 'Kantara', 'Drama', 124, 'Kannada', 'A mythic tale of man versus nature set in the Western Ghats.', '/images/posters/kantara.svg', 'https://images.unsplash.com/photo-1617563312615-cd5d8e573ef0?w=1200&q=80', 4.6, 9000, 'Rishab Shetty, Sapthami Gowda | Dir: Rishab Shetty', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=Ktr-R2AVeAU', '2022-09-30'),
-    (13, 'Joker', 'Drama', 122, 'English', 'A gritty origin story of a failed comedian turned chaotic villain.', '/images/posters/joker.svg', 'https://images.unsplash.com/photo-1521452263015-ef44692281b4?w=1200&q=80', 4.8, 20000, 'Joaquin Phoenix | Dir: Todd Phillips', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=zAGJQ3tJ4Io', '2019-10-04')
+(3, 'BLOCKBUSTER', 'Mega 30% discount on premium auditoriums up to ₹250', 30, 250.00, 500.00, DATE_ADD(CURDATE(), INTERVAL 45 DAY), TRUE)
 );
 
 -- =======================================================
@@ -278,51 +272,27 @@ INSERT INTO coupons (coupon_id, code, description, discount_percent, max_discoun
 -- =======================================================
 -- Booking 1: Akshat booked 2 tickets for Show 1 (Seats A1, A2)
 INSERT INTO bookings (booking_id, customer_id, user_id, show_id, booking_reference, number_of_tickets, seat_numbers, total_amount, convenience_fee, discount_amount, coupon_code, booking_status, payment_status)
-VALUES (1, 1, 2, 1, 'BK-100001', 2, 'A1, A2', 750.00, 30.00, 0.00, NULL, 'CONFIRMED', 'PAID'    (10, 'Kabir Singh', 'Romance', 165, 'Hindi', 'A hot-headed surgeon meets a brave medical student at a college, exploring love, loss and redemption.', '/images/posters/kabir-singh.svg', 'https://images.unsplash.com/photo-1517602302552-471fe67acf66?w=1200&q=80', 4.5, 11000, 'Shahid Kapoor, Kiara Advani | Dir: Sandeep Reddy Vanga', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=JkLlqgVoiP8', '2020-06-21'),
-    (11, 'Baahubali: The Beginning', 'Action', 159, 'Telugu', 'Epic tale of two brothers in a kingdom torn by betrayal and power.', '/images/posters/baahubali1.svg', 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=1200&q=80', 4.7, 15000, 'Prabhas, Rana Daggubati | Dir: S.S. Rajamouli', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=3U8ZPVApG1w', '2015-07-10'),
-    (12, 'Kantara', 'Drama', 124, 'Kannada', 'A mythic tale of man versus nature set in the Western Ghats.', '/images/posters/kantara.svg', 'https://images.unsplash.com/photo-1617563312615-cd5d8e573ef0?w=1200&q=80', 4.6, 9000, 'Rishab Shetty, Sapthami Gowda | Dir: Rishab Shetty', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=Ktr-R2AVeAU', '2022-09-30'),
-    (13, 'Joker', 'Drama', 122, 'English', 'A gritty origin story of a failed comedian turned chaotic villain.', '/images/posters/joker.svg', 'https://images.unsplash.com/photo-1521452263015-ef44692281b4?w=1200&q=80', 4.8, 20000, 'Joaquin Phoenix | Dir: Todd Phillips', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=zAGJQ3tJ4Io', '2019-10-04')
-);
+VALUES (1, 1, 2, 1, 'BK-100001', 2, 'A1, A2', 750.00, 30.00, 0.00, NULL, 'CONFIRMED', 'PAID');
 
 -- Insert seats in booking_seats (Seat A1 = seat_id 1, A2 = seat_id 2 in Screen 1)
 INSERT INTO booking_seats (booking_id, show_id, seat_id, seat_number, seat_tier, seat_price, status) VALUES
 (1, 1, 1, 'A1', 'RECLINER', 375.00, 'CONFIRMED'),
-(1, 1, 2, 'A2', 'RECLINER', 375.00, 'CONFIRMED'    (10, 'Kabir Singh', 'Romance', 165, 'Hindi', 'A hot-headed surgeon meets a brave medical student at a college, exploring love, loss and redemption.', '/images/posters/kabir-singh.svg', 'https://images.unsplash.com/photo-1517602302552-471fe67acf66?w=1200&q=80', 4.5, 11000, 'Shahid Kapoor, Kiara Advani | Dir: Sandeep Reddy Vanga', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=JkLlqgVoiP8', '2020-06-21'),
-    (11, 'Baahubali: The Beginning', 'Action', 159, 'Telugu', 'Epic tale of two brothers in a kingdom torn by betrayal and power.', '/images/posters/baahubali1.svg', 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=1200&q=80', 4.7, 15000, 'Prabhas, Rana Daggubati | Dir: S.S. Rajamouli', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=3U8ZPVApG1w', '2015-07-10'),
-    (12, 'Kantara', 'Drama', 124, 'Kannada', 'A mythic tale of man versus nature set in the Western Ghats.', '/images/posters/kantara.svg', 'https://images.unsplash.com/photo-1617563312615-cd5d8e573ef0?w=1200&q=80', 4.6, 9000, 'Rishab Shetty, Sapthami Gowda | Dir: Rishab Shetty', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=Ktr-R2AVeAU', '2022-09-30'),
-    (13, 'Joker', 'Drama', 122, 'English', 'A gritty origin story of a failed comedian turned chaotic villain.', '/images/posters/joker.svg', 'https://images.unsplash.com/photo-1521452263015-ef44692281b4?w=1200&q=80', 4.8, 20000, 'Joaquin Phoenix | Dir: Todd Phillips', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=zAGJQ3tJ4Io', '2019-10-04')
-);
+(1, 1, 2, 'A2', 'RECLINER', 375.00, 'CONFIRMED');
 
 -- Payment record
 INSERT INTO payments (booking_id, user_id, amount, payment_method, razorpay_order_id, razorpay_payment_id, transaction_id, payment_status)
-VALUES (1, 2, 750.00, 'RAZORPAY_TEST', 'order_demo_1001', 'pay_demo_2001', 'TXN-984729104', 'SUCCESS'    (10, 'Kabir Singh', 'Romance', 165, 'Hindi', 'A hot-headed surgeon meets a brave medical student at a college, exploring love, loss and redemption.', '/images/posters/kabir-singh.svg', 'https://images.unsplash.com/photo-1517602302552-471fe67acf66?w=1200&q=80', 4.5, 11000, 'Shahid Kapoor, Kiara Advani | Dir: Sandeep Reddy Vanga', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=JkLlqgVoiP8', '2020-06-21'),
-    (11, 'Baahubali: The Beginning', 'Action', 159, 'Telugu', 'Epic tale of two brothers in a kingdom torn by betrayal and power.', '/images/posters/baahubali1.svg', 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=1200&q=80', 4.7, 15000, 'Prabhas, Rana Daggubati | Dir: S.S. Rajamouli', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=3U8ZPVApG1w', '2015-07-10'),
-    (12, 'Kantara', 'Drama', 124, 'Kannada', 'A mythic tale of man versus nature set in the Western Ghats.', '/images/posters/kantara.svg', 'https://images.unsplash.com/photo-1617563312615-cd5d8e573ef0?w=1200&q=80', 4.6, 9000, 'Rishab Shetty, Sapthami Gowda | Dir: Rishab Shetty', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=Ktr-R2AVeAU', '2022-09-30'),
-    (13, 'Joker', 'Drama', 122, 'English', 'A gritty origin story of a failed comedian turned chaotic villain.', '/images/posters/joker.svg', 'https://images.unsplash.com/photo-1521452263015-ef44692281b4?w=1200&q=80', 4.8, 20000, 'Joaquin Phoenix | Dir: Todd Phillips', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=zAGJQ3tJ4Io', '2019-10-04')
-);
+VALUES (1, 2, 750.00, 'RAZORPAY_TEST', 'order_demo_1001', 'pay_demo_2001', 'TXN-984729104', 'SUCCESS');
 
 -- Booking 2: Rahul booked 2 tickets for Show 1 (Seats C3, C4)
 INSERT INTO bookings (booking_id, customer_id, user_id, show_id, booking_reference, number_of_tickets, seat_numbers, total_amount, convenience_fee, discount_amount, coupon_code, booking_status, payment_status)
-VALUES (2, 2, 3, 1, 'BK-100002', 2, 'C3, C4', 625.00, 30.00, 100.00, 'CINE100', 'CONFIRMED', 'PAID'    (10, 'Kabir Singh', 'Romance', 165, 'Hindi', 'A hot-headed surgeon meets a brave medical student at a college, exploring love, loss and redemption.', '/images/posters/kabir-singh.svg', 'https://images.unsplash.com/photo-1517602302552-471fe67acf66?w=1200&q=80', 4.5, 11000, 'Shahid Kapoor, Kiara Advani | Dir: Sandeep Reddy Vanga', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=JkLlqgVoiP8', '2020-06-21'),
-    (11, 'Baahubali: The Beginning', 'Action', 159, 'Telugu', 'Epic tale of two brothers in a kingdom torn by betrayal and power.', '/images/posters/baahubali1.svg', 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=1200&q=80', 4.7, 15000, 'Prabhas, Rana Daggubati | Dir: S.S. Rajamouli', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=3U8ZPVApG1w', '2015-07-10'),
-    (12, 'Kantara', 'Drama', 124, 'Kannada', 'A mythic tale of man versus nature set in the Western Ghats.', '/images/posters/kantara.svg', 'https://images.unsplash.com/photo-1617563312615-cd5d8e573ef0?w=1200&q=80', 4.6, 9000, 'Rishab Shetty, Sapthami Gowda | Dir: Rishab Shetty', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=Ktr-R2AVeAU', '2022-09-30'),
-    (13, 'Joker', 'Drama', 122, 'English', 'A gritty origin story of a failed comedian turned chaotic villain.', '/images/posters/joker.svg', 'https://images.unsplash.com/photo-1521452263015-ef44692281b4?w=1200&q=80', 4.8, 20000, 'Joaquin Phoenix | Dir: Todd Phillips', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=zAGJQ3tJ4Io', '2019-10-04')
-);
+VALUES (2, 2, 3, 1, 'BK-100002', 2, 'C3, C4', 625.00, 30.00, 100.00, 'CINE100', 'CONFIRMED', 'PAID');
 
 INSERT INTO booking_seats (booking_id, show_id, seat_id, seat_number, seat_tier, seat_price, status) VALUES
 (2, 1, 19, 'C3', 'PREMIUM', 312.50, 'CONFIRMED'),
-(2, 1, 20, 'C4', 'PREMIUM', 312.50, 'CONFIRMED'    (10, 'Kabir Singh', 'Romance', 165, 'Hindi', 'A hot-headed surgeon meets a brave medical student at a college, exploring love, loss and redemption.', '/images/posters/kabir-singh.svg', 'https://images.unsplash.com/photo-1517602302552-471fe67acf66?w=1200&q=80', 4.5, 11000, 'Shahid Kapoor, Kiara Advani | Dir: Sandeep Reddy Vanga', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=JkLlqgVoiP8', '2020-06-21'),
-    (11, 'Baahubali: The Beginning', 'Action', 159, 'Telugu', 'Epic tale of two brothers in a kingdom torn by betrayal and power.', '/images/posters/baahubali1.svg', 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=1200&q=80', 4.7, 15000, 'Prabhas, Rana Daggubati | Dir: S.S. Rajamouli', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=3U8ZPVApG1w', '2015-07-10'),
-    (12, 'Kantara', 'Drama', 124, 'Kannada', 'A mythic tale of man versus nature set in the Western Ghats.', '/images/posters/kantara.svg', 'https://images.unsplash.com/photo-1617563312615-cd5d8e573ef0?w=1200&q=80', 4.6, 9000, 'Rishab Shetty, Sapthami Gowda | Dir: Rishab Shetty', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=Ktr-R2AVeAU', '2022-09-30'),
-    (13, 'Joker', 'Drama', 122, 'English', 'A gritty origin story of a failed comedian turned chaotic villain.', '/images/posters/joker.svg', 'https://images.unsplash.com/photo-1521452263015-ef44692281b4?w=1200&q=80', 4.8, 20000, 'Joaquin Phoenix | Dir: Todd Phillips', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=zAGJQ3tJ4Io', '2019-10-04')
-);
+(2, 1, 20, 'C4', 'PREMIUM', 312.50, 'CONFIRMED');
 
 INSERT INTO payments (booking_id, user_id, amount, payment_method, razorpay_order_id, razorpay_payment_id, transaction_id, payment_status)
-VALUES (2, 3, 625.00, 'RAZORPAY_TEST', 'order_demo_1002', 'pay_demo_2002', 'TXN-984729105', 'SUCCESS'    (10, 'Kabir Singh', 'Romance', 165, 'Hindi', 'A hot-headed surgeon meets a brave medical student at a college, exploring love, loss and redemption.', '/images/posters/kabir-singh.svg', 'https://images.unsplash.com/photo-1517602302552-471fe67acf66?w=1200&q=80', 4.5, 11000, 'Shahid Kapoor, Kiara Advani | Dir: Sandeep Reddy Vanga', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=JkLlqgVoiP8', '2020-06-21'),
-    (11, 'Baahubali: The Beginning', 'Action', 159, 'Telugu', 'Epic tale of two brothers in a kingdom torn by betrayal and power.', '/images/posters/baahubali1.svg', 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=1200&q=80', 4.7, 15000, 'Prabhas, Rana Daggubati | Dir: S.S. Rajamouli', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=3U8ZPVApG1w', '2015-07-10'),
-    (12, 'Kantara', 'Drama', 124, 'Kannada', 'A mythic tale of man versus nature set in the Western Ghats.', '/images/posters/kantara.svg', 'https://images.unsplash.com/photo-1617563312615-cd5d8e573ef0?w=1200&q=80', 4.6, 9000, 'Rishab Shetty, Sapthami Gowda | Dir: Rishab Shetty', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=Ktr-R2AVeAU', '2022-09-30'),
-    (13, 'Joker', 'Drama', 122, 'English', 'A gritty origin story of a failed comedian turned chaotic villain.', '/images/posters/joker.svg', 'https://images.unsplash.com/photo-1521452263015-ef44692281b4?w=1200&q=80', 4.8, 20000, 'Joaquin Phoenix | Dir: Todd Phillips', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=zAGJQ3tJ4Io', '2019-10-04')
-);
+VALUES (2, 3, 625.00, 'RAZORPAY_TEST', 'order_demo_1002', 'pay_demo_2002', 'TXN-984729105', 'SUCCESS');
 
 -- =======================================================
 -- 9. SEED REVIEWS & RATINGS
@@ -331,10 +301,7 @@ INSERT INTO reviews (movie_id, user_id, rating, review_text) VALUES
 (1, 2, 5, 'Heath Ledger''s Joker is legendary. The pacing, soundtrack, and direction make this a timeless cinematic masterpiece.'),
 (1, 3, 5, 'Best superhero movie ever made. The cinematography and IMAX sound design are phenomenal.'),
 (3, 2, 5, 'Hans Zimmer''s score combined with Christopher Nolan''s cosmic storytelling brought tears to my eyes.'),
-(6, 3, 5, 'Dune Part Two is the defining sci-fi epic of this generation. Visuals are utterly breathtaking.'    (10, 'Kabir Singh', 'Romance', 165, 'Hindi', 'A hot-headed surgeon meets a brave medical student at a college, exploring love, loss and redemption.', '/images/posters/kabir-singh.svg', 'https://images.unsplash.com/photo-1517602302552-471fe67acf66?w=1200&q=80', 4.5, 11000, 'Shahid Kapoor, Kiara Advani | Dir: Sandeep Reddy Vanga', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=JkLlqgVoiP8', '2020-06-21'),
-    (11, 'Baahubali: The Beginning', 'Action', 159, 'Telugu', 'Epic tale of two brothers in a kingdom torn by betrayal and power.', '/images/posters/baahubali1.svg', 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=1200&q=80', 4.7, 15000, 'Prabhas, Rana Daggubati | Dir: S.S. Rajamouli', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=3U8ZPVApG1w', '2015-07-10'),
-    (12, 'Kantara', 'Drama', 124, 'Kannada', 'A mythic tale of man versus nature set in the Western Ghats.', '/images/posters/kantara.svg', 'https://images.unsplash.com/photo-1617563312615-cd5d8e573ef0?w=1200&q=80', 4.6, 9000, 'Rishab Shetty, Sapthami Gowda | Dir: Rishab Shetty', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=Ktr-R2AVeAU', '2022-09-30'),
-    (13, 'Joker', 'Drama', 122, 'English', 'A gritty origin story of a failed comedian turned chaotic villain.', '/images/posters/joker.svg', 'https://images.unsplash.com/photo-1521452263015-ef44692281b4?w=1200&q=80', 4.8, 20000, 'Joaquin Phoenix | Dir: Todd Phillips', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=zAGJQ3tJ4Io', '2019-10-04')
+(6, 3, 5, 'Dune Part Two is the defining sci-fi epic of this generation. Visuals are utterly breathtaking.')
 );
 
 -- =======================================================
@@ -344,11 +311,7 @@ INSERT INTO watchlist (user_id, movie_id) VALUES
 (2, 3), -- Akshat watchlists Interstellar
 (2, 6), -- Akshat watchlists Dune 2
 (3, 1), -- Rahul watchlists The Dark Knight
-(3, 7    (10, 'Kabir Singh', 'Romance', 165, 'Hindi', 'A hot-headed surgeon meets a brave medical student at a college, exploring love, loss and redemption.', '/images/posters/kabir-singh.svg', 'https://images.unsplash.com/photo-1517602302552-471fe67acf66?w=1200&q=80', 4.5, 11000, 'Shahid Kapoor, Kiara Advani | Dir: Sandeep Reddy Vanga', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=JkLlqgVoiP8', '2020-06-21'),
-    (11, 'Baahubali: The Beginning', 'Action', 159, 'Telugu', 'Epic tale of two brothers in a kingdom torn by betrayal and power.', '/images/posters/baahubali1.svg', 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=1200&q=80', 4.7, 15000, 'Prabhas, Rana Daggubati | Dir: S.S. Rajamouli', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=3U8ZPVApG1w', '2015-07-10'),
-    (12, 'Kantara', 'Drama', 124, 'Kannada', 'A mythic tale of man versus nature set in the Western Ghats.', '/images/posters/kantara.svg', 'https://images.unsplash.com/photo-1617563312615-cd5d8e573ef0?w=1200&q=80', 4.6, 9000, 'Rishab Shetty, Sapthami Gowda | Dir: Rishab Shetty', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=Ktr-R2AVeAU', '2022-09-30'),
-    (13, 'Joker', 'Drama', 122, 'English', 'A gritty origin story of a failed comedian turned chaotic villain.', '/images/posters/joker.svg', 'https://images.unsplash.com/photo-1521452263015-ef44692281b4?w=1200&q=80', 4.8, 20000, 'Joaquin Phoenix | Dir: Todd Phillips', 'NOW_SHOWING', 'https://www.youtube.com/watch?v=zAGJQ3tJ4Io', '2019-10-04')
-); -- Rahul watchlists Oppenheimer
+(3, 7); -- Rahul watchlists Oppenheimer
 
 -- Additional seed data for movies, theatres, and languages
 INSERT INTO movies (movie_id, title, genre, duration_minutes, language, description, poster_url, banner_url, rating, votes_count, cast_crew, release_status, trailer_url, release_date) VALUES
