@@ -1,9 +1,12 @@
 const crypto = require('crypto');
 const Razorpay = require('razorpay');
+const QRCode = require('qrcode');
 const pool = require('../config/db');
 
 const KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_test_placeholder';
 const KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'placeholder_secret';
+const UPI_ID = process.env.UPI_ID || '9654925538@ptaxis';
+const UPI_PAYEE_NAME = process.env.UPI_PAYEE_NAME || 'CinePass Entertainment';
 
 const isRazorpayConfigured = KEY_ID && KEY_ID !== 'rzp_test_placeholder' && !KEY_ID.includes('placeholder');
 
@@ -163,3 +166,45 @@ exports.getPaymentHistory = async (req, res, next) => {
         next(err);
     }
 };
+
+/**
+ * Generate Real UPI QR Code & Dynamic NPCI URI
+ * Payee VPA: 9654925538@ptaxis
+ */
+exports.generateUpiQr = async (req, res, next) => {
+    try {
+        const { amount, booking_reference } = req.query;
+        const payableAmount = parseFloat(amount) || 0;
+        const formattedAmount = payableAmount.toFixed(2);
+        const note = booking_reference ? `CinePass Booking ${booking_reference}` : 'CinePass Movie Ticket';
+
+        // Official NPCI UPI URI Specification
+        const upiUri = `upi://pay?pa=${encodeURIComponent(UPI_ID)}&pn=${encodeURIComponent(UPI_PAYEE_NAME)}&am=${formattedAmount}&cu=INR&tn=${encodeURIComponent(note)}`;
+
+        // High quality QR Code generated as Base64 Data URL
+        const qrDataUrl = await QRCode.toDataURL(upiUri, {
+            width: 320,
+            margin: 2,
+            color: {
+                dark: '#000000',
+                light: '#ffffff'
+            },
+            errorCorrectionLevel: 'M'
+        });
+
+        res.json({
+            success: true,
+            upi_id: UPI_ID,
+            payee_name: UPI_PAYEE_NAME,
+            amount: payableAmount,
+            formatted_amount: `₹${formattedAmount}`,
+            note,
+            upi_uri: upiUri,
+            qr_data_url: qrDataUrl
+        });
+    } catch (err) {
+        console.error('Error generating UPI QR code:', err);
+        next(err);
+    }
+};
+

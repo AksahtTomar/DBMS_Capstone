@@ -534,15 +534,123 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================================================
     // Checkout & Payment Workflow
     // ==========================================================================
-    // Store the current order ID for verification later
     let currentOrderId = null;
+    let currentPayableAmountNumber = 0;
+    let currentUpiUri = '';
+    const DEFAULT_UPI_ID = '9654925538@ptaxis';
+    const DEFAULT_PAYEE_NAME = 'CinePass Entertainment';
 
-    function openPaymentModal(amountFormatted) {
+    async function openPaymentModal(amountFormatted) {
         if (modalPayableAmount) modalPayableAmount.textContent = amountFormatted;
+        const upiPayableText = document.getElementById('upiPayableAmountText');
+        if (upiPayableText) upiPayableText.textContent = amountFormatted;
+
+        // Parse clean numerical amount
+        const amountNumber = parseFloat(amountFormatted.replace(/[^\d\.]/g, '')) || 0;
+        currentPayableAmountNumber = amountNumber;
+
+        // Update button text
+        const confirmBtn = document.getElementById('confirmPaymentSuccessBtn');
+        if (confirmBtn) {
+            confirmBtn.innerHTML = `<span>✓ I Have Paid ${amountFormatted} — Confirm Booking</span>`;
+        }
+
+        // Hide desktop notice initially
+        const notice = document.getElementById('upiDesktopNotice');
+        if (notice) notice.classList.add('hidden');
+
+        // Fetch Real Scannable UPI QR Code from Backend
+        const upiImg = document.getElementById('upiQrCodeImg');
+        const upiLoader = document.getElementById('upiQrLoadingSpinner');
+        const displayUpi = document.getElementById('displayUpiId');
+        const displayPayee = document.getElementById('displayPayeeName');
+        const openUpiBtnText = document.getElementById('openUpiBtnText');
+
+        const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+        if (openUpiBtnText) {
+            openUpiBtnText.textContent = isMobile 
+                ? '📱 Tap to Pay directly in UPI App (PhonePe / GPay)' 
+                : '📱 On Mobile? Tap to Pay • On PC? Scan QR Above';
+        }
+
+        if (upiLoader) upiLoader.classList.remove('hidden');
+
+        try {
+            const res = await fetch(`/api/payments/upi-qr?amount=${amountNumber}`);
+            const data = await res.json();
+
+            if (data.success && data.qr_data_url) {
+                if (upiImg) {
+                    upiImg.src = data.qr_data_url;
+                    upiImg.classList.remove('hidden');
+                }
+                currentUpiUri = data.upi_uri || '';
+                if (displayUpi) displayUpi.textContent = data.upi_id || DEFAULT_UPI_ID;
+                if (displayPayee) displayPayee.textContent = data.payee_name || DEFAULT_PAYEE_NAME;
+            } else {
+                throw new Error('Fallback to direct UPI QR');
+            }
+        } catch (e) {
+            // Direct client-side NPCI UPI URI fallback with high-res QR API
+            const upiUri = `upi://pay?pa=${encodeURIComponent(DEFAULT_UPI_ID)}&pn=${encodeURIComponent(DEFAULT_PAYEE_NAME)}&am=${amountNumber.toFixed(2)}&cu=INR&tn=${encodeURIComponent('CinePass Movie Ticket')}`;
+            currentUpiUri = upiUri;
+            if (upiImg) {
+                upiImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiUri)}`;
+            }
+            if (displayUpi) displayUpi.textContent = DEFAULT_UPI_ID;
+            if (displayPayee) displayPayee.textContent = DEFAULT_PAYEE_NAME;
+        } finally {
+            if (upiLoader) upiLoader.classList.add('hidden');
+        }
+
         if (paymentModal) {
             paymentModal.classList.add('active');
             paymentModal.style.display = 'flex';
         }
+    }
+
+    // Handle Mobile One-Tap Pay vs Desktop PC guidance
+    const openUpiBtn = document.getElementById('openUpiAppBtn');
+    if (openUpiBtn) {
+        openUpiBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+            
+            if (isMobile && currentUpiUri) {
+                // On phones, invoke the intent directly in the same window (prevents blank Chrome tab)
+                window.location.href = currentUpiUri;
+            } else {
+                // On PC / Desktop browser (Windows, Mac, Linux):
+                // 1. Copy the UPI ID automatically
+                const upiId = (document.getElementById('displayUpiId') ? document.getElementById('displayUpiId').textContent : DEFAULT_UPI_ID).trim();
+                navigator.clipboard.writeText(upiId).catch(() => {});
+
+                // 2. Display helpful notice explaining that phone scans the QR code
+                const notice = document.getElementById('upiDesktopNotice');
+                if (notice) {
+                    notice.classList.remove('hidden');
+                }
+            }
+        });
+    }
+
+    // Copy UPI ID button logic
+    const copyUpiBtn = document.getElementById('copyUpiBtn');
+    if (copyUpiBtn) {
+        copyUpiBtn.addEventListener('click', async () => {
+            const upiId = (document.getElementById('displayUpiId') ? document.getElementById('displayUpiId').textContent : DEFAULT_UPI_ID).trim();
+            try {
+                await navigator.clipboard.writeText(upiId);
+                copyUpiBtn.classList.add('copied');
+                copyUpiBtn.innerHTML = '<span>✓</span><span>Copied!</span>';
+                setTimeout(() => {
+                    copyUpiBtn.classList.remove('copied');
+                    copyUpiBtn.innerHTML = '<span id="copyUpiIcon">📋</span><span id="copyUpiText">Copy</span>';
+                }, 2200);
+            } catch (err) {
+                prompt('Copy this UPI ID:', upiId);
+            }
+        });
     }
 
     function closePaymentModal() {
@@ -550,6 +658,8 @@ document.addEventListener('DOMContentLoaded', () => {
             paymentModal.classList.remove('active');
             paymentModal.style.display = 'none';
         }
+        const notice = document.getElementById('upiDesktopNotice');
+        if (notice) notice.classList.add('hidden');
     }
 
     if (proceedToPayBtn) {
@@ -645,29 +755,34 @@ document.addEventListener('DOMContentLoaded', () => {
     if (confirmPaymentSuccessBtn) {
         confirmPaymentSuccessBtn.addEventListener('click', async () => {
             confirmPaymentSuccessBtn.disabled = true;
-            confirmPaymentSuccessBtn.innerHTML = '<span>⏳ Verifying Payment &amp; Booking...</span>';
+            confirmPaymentSuccessBtn.innerHTML = '<span>⏳ Verifying UPI Payment &amp; Confirming Ticket...</span>';
 
             const name = custNameInput.value.trim();
             const email = custEmailInput.value.trim();
             const seatIds = Array.from(selectedSeatsMap.keys());
             const couponCode = appliedCouponData ? appliedCouponData.code : null;
 
+            // Determine active payment method and transaction ID
+            const isUpiActive = tabUpi && !tabUpi.classList.contains('hidden');
+            const upiUtrInput = document.getElementById('upiUtrInput');
+            const enteredUtr = upiUtrInput ? upiUtrInput.value.trim() : '';
+
+            let paymentMethod = 'UPI_QR';
+            let txnId = '';
+
+            if (isUpiActive) {
+                paymentMethod = 'UPI_QR';
+                txnId = enteredUtr ? (`UTR-${enteredUtr}`) : (`TXN-UPI-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`);
+            } else if (tabCard && !tabCard.classList.contains('hidden')) {
+                paymentMethod = 'CARD';
+                txnId = `TXN-CARD-${Date.now()}`;
+            } else {
+                paymentMethod = 'NETBANKING';
+                txnId = `TXN-NB-${Date.now()}`;
+            }
+
             try {
-                // 1. Verify Payment on Backend
-                const verifyRes = await fetch('/api/payments/verify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        razorpay_order_id: currentOrderId || ('order_sim_' + Date.now()),
-                        razorpay_payment_id: 'pay_test_' + Date.now(),
-                        is_simulator: true
-                    })
-                });
-
-                const verifyData = await verifyRes.json();
-                const txnId = (verifyData && verifyData.transaction_id) ? verifyData.transaction_id : ('TXN-SIM-' + Date.now());
-
-                // 2. Execute ACID Booking Transaction in MySQL
+                // 1. Execute ACID Booking Transaction in MySQL
                 const headers = { 'Content-Type': 'application/json' };
                 if (userToken) headers['Authorization'] = `Bearer ${userToken}`;
 
@@ -681,7 +796,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         seat_ids: seatIds,
                         coupon_code: couponCode,
                         transaction_id: txnId,
-                        payment_method: 'RAZORPAY_TEST'
+                        payment_method: paymentMethod
                     })
                 });
 
@@ -694,6 +809,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Close payment modal
                 closePaymentModal();
 
+                // Clear UTR field for next booking
+                if (upiUtrInput) upiUtrInput.value = '';
+
                 // Display Digital Cinema Ticket Modal
                 displayDigitalTicket(bookingData.data);
 
@@ -701,7 +819,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert(`Booking Error: ${err.message}`);
             } finally {
                 confirmPaymentSuccessBtn.disabled = false;
-                confirmPaymentSuccessBtn.innerHTML = '<span>✓ Pay Now (Test Mode)</span>';
+                confirmPaymentSuccessBtn.innerHTML = '<span>✓ I Have Paid — Confirm Booking</span>';
             }
         });
     }

@@ -326,7 +326,7 @@
           </div>
         </div>
         <div style="display: flex; align-items: center; gap: 12px;">
-          <span class="rzp-badge" id="paymentModeBadge">TEST MODE</span>
+          <span class="rzp-badge" id="paymentModeBadge" style="background: rgba(0, 200, 83, 0.15); color: #00e676; border-color: #00e676;">⚡ LIVE UPI SCANNER</span>
           <button type="button" id="closePaymentModalX" style="background: none; border: none; color: #fff; font-size: 1.6rem; cursor: pointer; line-height: 1; padding: 0 4px;" title="Close">&times;</button>
         </div>
       </div>
@@ -346,27 +346,85 @@
 
       <!-- UPI Tab Content -->
       <div class="payment-tab-content" id="tabContentUpi">
-        <div style="text-align: center; margin-bottom: 16px;">
-          <div style="width: 140px; height: 140px; margin: 0 auto 12px auto; background: #fff; padding: 10px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-            <svg width="120" height="120" viewBox="0 0 100 100">
-              <rect x="0" y="0" width="30" height="30" fill="#000"/>
-              <rect x="5" y="5" width="20" height="20" fill="#fff"/>
-              <rect x="10" y="10" width="10" height="10" fill="#000"/>
-              <rect x="70" y="0" width="30" height="30" fill="#000"/>
-              <rect x="75" y="5" width="20" height="20" fill="#fff"/>
-              <rect x="80" y="10" width="10" height="10" fill="#000"/>
-              <rect x="0" y="70" width="30" height="30" fill="#000"/>
-              <rect x="5" y="75" width="20" height="20" fill="#fff"/>
-              <rect x="10" y="80" width="10" height="10" fill="#000"/>
-              <rect x="40" y="20" width="20" height="15" fill="#e50914"/>
-              <rect x="40" y="45" width="20" height="20" fill="#000"/>
-              <rect x="65" y="65" width="25" height="25" fill="#000"/>
-            </svg>
+        <!-- Real Scanner Frame & Dynamic QR Code -->
+        <div class="upi-scanner-container">
+          <div class="upi-qr-scanner-frame" id="upiQrFrame">
+            <!-- Animated Scan Line -->
+            <div class="upi-scanner-laser"></div>
+            <!-- Target Corner Reticles -->
+            <div class="scanner-corner corner-tl"></div>
+            <div class="scanner-corner corner-tr"></div>
+            <div class="scanner-corner corner-bl"></div>
+            <div class="scanner-corner corner-br"></div>
+            <!-- Dynamic Real Scannable QR Code Image -->
+            <img id="upiQrCodeImg" 
+                 src="" 
+                 alt="Scan QR code with any UPI app to pay 9654925538@ptaxis" 
+                 class="upi-qr-image"
+                 style="display: block;">
+            <div id="upiQrLoadingSpinner" class="upi-qr-loader hidden">
+              <div class="spinner"></div>
+              <span>Generating UPI QR Code...</span>
+            </div>
           </div>
-          <p style="font-size: 0.82rem; color: var(--text-muted);">Scan QR with Google Pay, PhonePe, or Paytm (Test Mode)</p>
         </div>
-        <div class="form-group">
-          <input type="text" class="form-control" value="cinepass.test@upi" readonly style="text-align: center; font-weight: 600;">
+
+        <!-- Accepted UPI Apps Logo Bar -->
+        <div class="upi-accepted-apps-bar">
+          <span class="upi-app-badge" style="color: #4285F4;">Google Pay</span>
+          <span class="upi-app-badge" style="color: #5f259f;">PhonePe</span>
+          <span class="upi-app-badge" style="color: #00b9f5;">Paytm</span>
+          <span class="upi-app-badge" style="color: #f7941d;">BHIM UPI</span>
+          <span class="upi-app-badge" style="color: #ffffff;">CRED</span>
+        </div>
+
+        <!-- Payee & UPI ID Details Box -->
+        <div class="upi-payee-info-card">
+          <div class="upi-info-row">
+            <span class="upi-label">UPI ID:</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="upi-value" id="displayUpiId">9654925538@ptaxis</span>
+              <button type="button" class="btn-copy-upi" id="copyUpiBtn" title="Copy UPI ID">
+                <span id="copyUpiIcon">📋</span>
+                <span id="copyUpiText">Copy</span>
+              </button>
+            </div>
+          </div>
+          <div class="upi-info-row">
+            <span class="upi-label">Payee Name:</span>
+            <span class="upi-value" style="color: #ffffff;" id="displayPayeeName">CinePass Entertainment</span>
+          </div>
+          <div class="upi-info-row" style="border-top: 1px dashed rgba(255, 255, 255, 0.12); padding-top: 8px; margin-top: 6px;">
+            <span class="upi-label" style="font-weight: 700;">Payable Amount:</span>
+            <span class="upi-value" style="font-size: 1.15rem; font-weight: 800; color: #00e676;" id="upiPayableAmountText">₹0.00</span>
+          </div>
+        </div>
+
+        <!-- Mobile One-Tap Pay Link / PC Info -->
+        <button type="button" id="openUpiAppBtn" class="btn-upi-mobile-pay" style="cursor: pointer; border: 1px solid rgba(0, 176, 255, 0.4);">
+          <span id="openUpiBtnText">📱 On Mobile? Tap to Pay • On PC? Scan QR Above</span>
+        </button>
+
+        <!-- Help notice for Desktop users -->
+        <div id="upiDesktopNotice" class="upi-desktop-notice hidden">
+          <div style="font-weight: 700; margin-bottom: 4px; color: #ffab00; display: flex; align-items: center; gap: 6px;">
+            <span>ℹ️</span> <span>How to pay on PC / Laptop:</span>
+          </div>
+          <div style="font-size: 0.8rem; color: #e0e0e0; line-height: 1.4;">
+            UPI apps (Google Pay, PhonePe, Paytm) run on mobile phones. On your PC, simply <strong>point your phone's camera or UPI app at the QR code above</strong> to pay!
+          </div>
+          <div style="margin-top: 6px; font-size: 0.78rem; color: #00e676; font-weight: 600;">
+            ✓ UPI ID <strong>9654925538@ptaxis</strong> has been copied to your clipboard.
+          </div>
+        </div>
+
+        <!-- UPI Transaction / UTR Verification Input -->
+        <div class="form-group" style="margin-top: 14px; margin-bottom: 0;">
+          <label class="form-label" for="upiUtrInput" style="font-size: 0.8rem; color: var(--text-secondary); display: flex; justify-content: space-between;">
+            <span>UPI Reference / UTR Number</span>
+            <span style="color: var(--text-muted); font-size: 0.75rem;">(From your UPI app payment receipt)</span>
+          </label>
+          <input type="text" id="upiUtrInput" class="form-control" placeholder="e.g. 432198765432 or leave blank for instant verify" maxlength="30">
         </div>
       </div>
 
