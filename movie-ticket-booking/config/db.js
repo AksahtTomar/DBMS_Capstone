@@ -1,20 +1,35 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-// Create a MySQL connection pool using environment variables
-const pool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT, 10) || 3306,
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'movie_ticket_booking',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-    enableKeepAlive: true,
-    keepAliveInitialDelay: 0,
-    dateStrings: true
-});
+// Determine SSL requirement (Required for cloud MySQL like TiDB, Aiven, PlanetScale, Railway)
+const isCloudDb = process.env.DB_SSL === 'true' || 
+                  (process.env.DB_HOST && process.env.DB_HOST !== 'localhost' && process.env.DB_HOST !== '127.0.0.1');
+
+// Create a MySQL connection pool supporting both local and cloud MySQL
+const poolConfig = process.env.DATABASE_URL
+    ? {
+        uri: process.env.DATABASE_URL,
+        ssl: isCloudDb ? { rejectUnauthorized: false } : undefined,
+        waitForConnections: true,
+        connectionLimit: 10,
+        dateStrings: true
+    }
+    : {
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT, 10) || 3306,
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || '',
+        database: process.env.DB_NAME || 'movie_ticket_booking',
+        ssl: isCloudDb ? { rejectUnauthorized: false } : undefined,
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0,
+        enableKeepAlive: true,
+        keepAliveInitialDelay: 0,
+        dateStrings: true
+    };
+
+const pool = mysql.createPool(poolConfig);
 
 // Test the database connection pool on startup
 async function testConnection() {
