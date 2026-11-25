@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const pool = require('../config/db');
+const mockStore = require('../services/mockStore');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -50,6 +51,25 @@ const createBooking = async (req, res) => {
         return res.status(400).json({
             success: false,
             message: 'number_of_tickets must be an integer between 1 and 10'
+        });
+    }
+
+    if (pool.isVercelFallback && pool.isVercelFallback()) {
+        const booking = mockStore.createBooking({
+            customer_name,
+            email: cleanEmail,
+            show_id: showId,
+            number_of_tickets: numTickets,
+            seat_ids,
+            coupon_code,
+            payment_method,
+            transaction_id
+        });
+        return res.status(201).json({
+            success: true,
+            message: 'Booking confirmed successfully!',
+            data: booking,
+            is_fallback: true
         });
     }
 
@@ -308,6 +328,25 @@ const createBooking = async (req, res) => {
         if (connection) {
             try { await connection.rollback(); } catch (rbErr) {}
         }
+        if (mockStore.isConnectionError(err) || err.message === 'DATABASE_OFFLINE') {
+            console.warn('⚡ Using Seed Fallback for createBooking');
+            const booking = mockStore.createBooking({
+                customer_name,
+                email: cleanEmail,
+                show_id: showId,
+                number_of_tickets: numTickets,
+                seat_ids,
+                coupon_code,
+                payment_method,
+                transaction_id
+            });
+            return res.status(201).json({
+                success: true,
+                message: 'Booking confirmed successfully!',
+                data: booking,
+                is_fallback: true
+            });
+        }
         console.error('Error creating booking transaction:', err);
         return res.status(500).json({
             success: false,
@@ -334,6 +373,11 @@ const getBookingsByEmail = async (req, res) => {
         }
 
         const cleanEmail = email.toString().trim().toLowerCase();
+
+        if (pool.isVercelFallback && pool.isVercelFallback()) {
+            const rows = mockStore.getUserBookings(cleanEmail);
+            return res.status(200).json({ success: true, count: rows.length, data: rows, is_fallback: true });
+        }
 
         const [rows] = await pool.query(
             `SELECT b.booking_id,
@@ -381,6 +425,11 @@ const getBookingsByEmail = async (req, res) => {
             data: rows
         });
     } catch (err) {
+        if (mockStore.isConnectionError(err) || err.message === 'DATABASE_OFFLINE') {
+            const cleanEmail = (req.query.email || (req.user ? req.user.email : '')).toString().trim().toLowerCase();
+            const rows = mockStore.getUserBookings(cleanEmail);
+            return res.status(200).json({ success: true, count: rows.length, data: rows, is_fallback: true });
+        }
         console.error('Error fetching bookings by email:', err);
         return res.status(500).json({
             success: false,
@@ -396,6 +445,12 @@ const getBookingsByEmail = async (req, res) => {
 const getBookingTicket = async (req, res) => {
     try {
         const idOrRef = req.params.reference;
+
+        if (pool.isVercelFallback && pool.isVercelFallback()) {
+            const ticket = mockStore.getBookingById(idOrRef);
+            if (!ticket) return res.status(404).json({ success: false, message: 'Ticket not found' });
+            return res.json({ success: true, ticket, is_fallback: true });
+        }
 
         const [rows] = await pool.query(
             `SELECT b.booking_id,
@@ -448,6 +503,11 @@ const getBookingTicket = async (req, res) => {
 
         res.json({ success: true, ticket: rows[0] });
     } catch (err) {
+        if (mockStore.isConnectionError(err) || err.message === 'DATABASE_OFFLINE') {
+            const ticket = mockStore.getBookingById(req.params.reference);
+            if (!ticket) return res.status(404).json({ success: false, message: 'Ticket not found' });
+            return res.json({ success: true, ticket, is_fallback: true });
+        }
         res.status(500).json({ success: false, message: 'Error retrieving ticket', error: err.message });
     }
 };

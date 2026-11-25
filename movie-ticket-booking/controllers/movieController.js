@@ -1,13 +1,23 @@
 const pool = require('../config/db');
+const mockStore = require('../services/mockStore');
 
 /**
  * Fetch movies from MySQL with full discovery capabilities:
- * - Text search (title, description, genre)
- * - Filtering (genre, language, release_status)
- * - Sorting (rating, popularity, title, release_date)
+ * Text search, filtering, and sorting.
+ * Automatically falls back to Seed Store if database is offline.
  */
 const getAllMovies = async (req, res) => {
     try {
+        if (pool.isVercelFallback && pool.isVercelFallback()) {
+            const movies = mockStore.getMovies(req.query);
+            return res.status(200).json({
+                success: true,
+                count: movies.length,
+                data: movies,
+                is_fallback: true
+            });
+        }
+
         const { search, genre, language, status, sort } = req.query;
 
         let query = 'SELECT * FROM movies WHERE 1=1';
@@ -65,6 +75,17 @@ const getAllMovies = async (req, res) => {
             data: rows
         });
     } catch (err) {
+        if (mockStore.isConnectionError(err) || err.message === 'DATABASE_OFFLINE') {
+            console.warn('⚡ Using Seed Fallback for getAllMovies');
+            const movies = mockStore.getMovies(req.query);
+            return res.status(200).json({
+                success: true,
+                count: movies.length,
+                data: movies,
+                is_fallback: true
+            });
+        }
+
         console.error('Error fetching movies:', err);
         return res.status(500).json({
             success: false,
@@ -85,6 +106,14 @@ const getMovieById = async (req, res) => {
                 success: false,
                 message: 'Invalid movie ID. ID must be a positive number.'
             });
+        }
+
+        if (pool.isVercelFallback && pool.isVercelFallback()) {
+            const movie = mockStore.getMovieById(movieId);
+            if (!movie) {
+                return res.status(404).json({ success: false, message: 'Movie not found' });
+            }
+            return res.status(200).json({ success: true, data: movie, is_fallback: true });
         }
 
         const [rows] = await pool.query('SELECT * FROM movies WHERE movie_id = ?', [movieId]);
@@ -120,6 +149,15 @@ const getMovieById = async (req, res) => {
             data: movie
         });
     } catch (err) {
+        if (mockStore.isConnectionError(err) || err.message === 'DATABASE_OFFLINE') {
+            console.warn(`⚡ Using Seed Fallback for getMovieById(${req.params.id})`);
+            const movie = mockStore.getMovieById(req.params.id);
+            if (!movie) {
+                return res.status(404).json({ success: false, message: 'Movie not found' });
+            }
+            return res.status(200).json({ success: true, data: movie, is_fallback: true });
+        }
+
         console.error('Error fetching movie details:', err);
         return res.status(500).json({
             success: false,
@@ -162,6 +200,14 @@ const addMovie = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: 'duration_minutes must be a positive integer'
+            });
+        }
+
+        if (pool.isVercelFallback && pool.isVercelFallback()) {
+            return res.status(201).json({
+                success: true,
+                message: 'Movie registered (demo mode)',
+                data: { movie_id: Date.now(), title: title.trim(), genre: genre.trim() }
             });
         }
 
@@ -213,6 +259,10 @@ const updateMovie = async (req, res) => {
         const movieId = parseInt(req.params.id, 10);
         if (isNaN(movieId) || movieId <= 0) {
             return res.status(400).json({ success: false, message: 'Invalid movie ID' });
+        }
+
+        if (pool.isVercelFallback && pool.isVercelFallback()) {
+            return res.status(200).json({ success: true, message: 'Movie updated successfully' });
         }
 
         const [existing] = await pool.query('SELECT * FROM movies WHERE movie_id = ?', [movieId]);
@@ -273,6 +323,10 @@ const deleteMovie = async (req, res) => {
         const movieId = parseInt(req.params.id, 10);
         if (isNaN(movieId) || movieId <= 0) {
             return res.status(400).json({ success: false, message: 'Invalid movie ID' });
+        }
+
+        if (pool.isVercelFallback && pool.isVercelFallback()) {
+            return res.status(200).json({ success: true, message: 'Movie deleted successfully' });
         }
 
         // Check dependent shows

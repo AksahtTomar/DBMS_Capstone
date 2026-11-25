@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const mockStore = require('../services/mockStore');
 
 /**
  * Fetch interactive seat layout and real-time occupancy for a show
@@ -8,6 +9,34 @@ exports.getSeatsForShow = async (req, res, next) => {
         const showId = parseInt(req.params.showId, 10);
         if (isNaN(showId) || showId <= 0) {
             return res.status(400).json({ success: false, message: 'Invalid show ID' });
+        }
+
+        if (pool.isVercelFallback && pool.isVercelFallback()) {
+            const fallbackData = mockStore.getSeatsForShow(showId);
+            if (!fallbackData) return res.status(404).json({ success: false, message: 'Show not found' });
+            
+            const basePrice = fallbackData.show.ticket_price || 350;
+            const occupiedNumbers = new Set(fallbackData.occupiedSeats.map(s => s.seat_number));
+            const layout = fallbackData.seats.map(s => ({
+                seat_id: s.seat_id,
+                seat_number: s.seat_number,
+                row: s.seat_row,
+                col: s.seat_col,
+                tier: s.seat_tier,
+                price: Math.round(basePrice * s.price_multiplier),
+                is_occupied: occupiedNumbers.has(s.seat_number)
+            }));
+
+            return res.json({
+                success: true,
+                show: {
+                    ...fallbackData.show,
+                    base_ticket_price: basePrice
+                },
+                seats: layout,
+                convenience_fee_per_ticket: 25.00,
+                is_fallback: true
+            });
         }
 
         // 1. Get show metadata
@@ -106,6 +135,34 @@ exports.getSeatsForShow = async (req, res, next) => {
         });
 
     } catch (err) {
+        if (mockStore.isConnectionError(err) || err.message === 'DATABASE_OFFLINE') {
+            console.warn(`⚡ Using Seed Fallback for getSeatsForShow(${req.params.showId})`);
+            const fallbackData = mockStore.getSeatsForShow(req.params.showId);
+            if (!fallbackData) return res.status(404).json({ success: false, message: 'Show not found' });
+            
+            const basePrice = fallbackData.show.ticket_price || 350;
+            const occupiedNumbers = new Set(fallbackData.occupiedSeats.map(s => s.seat_number));
+            const layout = fallbackData.seats.map(s => ({
+                seat_id: s.seat_id,
+                seat_number: s.seat_number,
+                row: s.seat_row,
+                col: s.seat_col,
+                tier: s.seat_tier,
+                price: Math.round(basePrice * s.price_multiplier),
+                is_occupied: occupiedNumbers.has(s.seat_number)
+            }));
+
+            return res.json({
+                success: true,
+                show: {
+                    ...fallbackData.show,
+                    base_ticket_price: basePrice
+                },
+                seats: layout,
+                convenience_fee_per_ticket: 25.00,
+                is_fallback: true
+            });
+        }
         next(err);
     }
 };

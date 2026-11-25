@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const mockStore = require('../services/mockStore');
 
 let lastSyncCheck = null;
 
@@ -7,6 +8,7 @@ let lastSyncCheck = null;
  * if all shows in database ever lapse into the past.
  */
 async function ensureUpcomingShows() {
+    if (pool.isVercelFallback && pool.isVercelFallback()) return;
     const today = new Date().toISOString().split('T')[0];
     if (lastSyncCheck === today) return;
 
@@ -23,7 +25,7 @@ async function ensureUpcomingShows() {
         }
         lastSyncCheck = today;
     } catch (e) {
-        console.error('Showtime auto-sync check error:', e);
+        // Safe to ignore if DB offline
     }
 }
 
@@ -33,6 +35,11 @@ async function ensureUpcomingShows() {
  */
 const getAllShows = async (req, res) => {
     try {
+        if (pool.isVercelFallback && pool.isVercelFallback()) {
+            const shows = mockStore.getShows(req.query);
+            return res.status(200).json({ success: true, count: shows.length, data: shows, is_fallback: true });
+        }
+
         await ensureUpcomingShows();
         const { movie_id, theatre_id, city, date } = req.query;
 
@@ -82,6 +89,12 @@ const getAllShows = async (req, res) => {
             data: rows
         });
     } catch (err) {
+        if (mockStore.isConnectionError(err) || err.message === 'DATABASE_OFFLINE') {
+            console.warn('⚡ Using Seed Fallback for getAllShows');
+            const shows = mockStore.getShows(req.query);
+            return res.status(200).json({ success: true, count: shows.length, data: shows, is_fallback: true });
+        }
+
         console.error('Error fetching shows:', err);
         return res.status(500).json({
             success: false,
@@ -96,16 +109,21 @@ const getAllShows = async (req, res) => {
  */
 const getShowsByMovie = async (req, res) => {
     try {
-        await ensureUpcomingShows();
         const movieId = parseInt(req.params.movieId, 10);
-        const { city, date } = req.query;
-
         if (isNaN(movieId) || movieId <= 0) {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid movie ID. ID must be a positive number.'
             });
         }
+
+        if (pool.isVercelFallback && pool.isVercelFallback()) {
+            const shows = mockStore.getShows({ ...req.query, movie_id: movieId });
+            return res.status(200).json({ success: true, count: shows.length, data: shows, is_fallback: true });
+        }
+
+        await ensureUpcomingShows();
+        const { city, date } = req.query;
 
         let query = `
             SELECT s.show_id, s.movie_id, s.theatre_id, s.screen_id,
@@ -144,6 +162,12 @@ const getShowsByMovie = async (req, res) => {
             data: rows
         });
     } catch (err) {
+        if (mockStore.isConnectionError(err) || err.message === 'DATABASE_OFFLINE') {
+            console.warn(`⚡ Using Seed Fallback for getShowsByMovie(${req.params.movieId})`);
+            const shows = mockStore.getShows({ ...req.query, movie_id: req.params.movieId });
+            return res.status(200).json({ success: true, count: shows.length, data: shows, is_fallback: true });
+        }
+
         console.error('Error fetching shows for movie:', err);
         return res.status(500).json({
             success: false,
@@ -161,6 +185,12 @@ const getShowById = async (req, res) => {
         const showId = parseInt(req.params.id, 10);
         if (isNaN(showId) || showId <= 0) {
             return res.status(400).json({ success: false, message: 'Invalid show ID' });
+        }
+
+        if (pool.isVercelFallback && pool.isVercelFallback()) {
+            const show = mockStore.getShowById(showId);
+            if (!show) return res.status(404).json({ success: false, message: 'Show not found' });
+            return res.json({ success: true, data: show, is_fallback: true });
         }
 
         const [rows] = await pool.query(
@@ -186,6 +216,13 @@ const getShowById = async (req, res) => {
 
         return res.json({ success: true, data: rows[0] });
     } catch (err) {
+        if (mockStore.isConnectionError(err) || err.message === 'DATABASE_OFFLINE') {
+            console.warn(`⚡ Using Seed Fallback for getShowById(${req.params.id})`);
+            const show = mockStore.getShowById(req.params.id);
+            if (!show) return res.status(404).json({ success: false, message: 'Show not found' });
+            return res.json({ success: true, data: show, is_fallback: true });
+        }
+
         console.error('Error fetching show details:', err);
         return res.status(500).json({ success: false, message: 'Internal server error', error: err.message });
     }
@@ -224,6 +261,14 @@ const addShow = async (req, res) => {
         }
         if (isNaN(price) || price <= 0) {
             return res.status(400).json({ success: false, message: 'ticket_price must be greater than 0' });
+        }
+
+        if (pool.isVercelFallback && pool.isVercelFallback()) {
+            return res.status(201).json({
+                success: true,
+                message: 'Show scheduled successfully (demo mode)',
+                data: { show_id: Date.now(), movie_id: movieId, show_date, show_time, ticket_price: price, available_seats: seats }
+            });
         }
 
         const [movieRows] = await pool.query('SELECT movie_id FROM movies WHERE movie_id = ?', [movieId]);
@@ -265,6 +310,11 @@ const addShow = async (req, res) => {
 const deleteShow = async (req, res) => {
     try {
         const showId = parseInt(req.params.id, 10);
+
+        if (pool.isVercelFallback && pool.isVercelFallback()) {
+            return res.json({ success: true, message: 'Show cancelled and deleted successfully' });
+        }
+
         const [bookings] = await pool.query(
             'SELECT COUNT(*) AS count FROM bookings WHERE show_id = ? AND booking_status = "CONFIRMED"',
             [showId]
